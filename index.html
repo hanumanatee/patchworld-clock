@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Patchworld Clock</title>
+
+    <script src="patchworld-bridge.js"></script>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        #clock {
+            font-size: 60px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Patchworld Clock</h2>
+    <div id="clock">--:--:--</div>
+
+    <script>
+        async function updateClock() {
+            const now = new Date();
+
+            const time = now.toLocaleTimeString("en-GB", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: false
+            });
+
+            document.getElementById("clock").textContent = time;
+
+            try {
+                await PatchWorld.interfaceMessageOut(time);
+            } catch (error) {
+                console.log("Patchworld bridge not available:", error);
+            }
+        }
+
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
+
+</body>
+</html>
