@@ -34,14 +34,24 @@
     <h2>Patchworld Numeric Clock</h2>
 
     <div id="clock">--:--:--</div>
-    <div id="status">Waiting for sync request from Patchworld...</div>
-    <div id="lastsync">No sync sent yet.</div>
+
+    <div id="status">
+        Waiting for Patchworld...
+    </div>
+
+    <div id="lastsync">
+        No sync sent yet.
+    </div>
+
 
     <script>
 
-        // Return local time as seconds since midnight.
-        // Milliseconds are included for a more accurate synchronization.
+        // ---------------------------------------------------------
+        // GET CURRENT LOCAL TIME AS SECONDS SINCE MIDNIGHT
+        // ---------------------------------------------------------
+
         function secondsSinceMidnight() {
+
             const now = new Date();
 
             return (
@@ -53,9 +63,15 @@
         }
 
 
-        // This display is only for checking the webpage.
-        // It does NOT send anything to Patchworld.
+        // ---------------------------------------------------------
+        // UPDATE THE VISIBLE CLOCK ON THE WEBPAGE
+        //
+        // This is only for debugging/confirmation.
+        // It sends nothing to Patchworld.
+        // ---------------------------------------------------------
+
         function updatePageDisplay() {
+
             const now = new Date();
 
             const time = now.toLocaleTimeString("en-GB", {
@@ -69,42 +85,97 @@
         }
 
 
-        // Read the current local time and send it to Patchworld.
+        // ---------------------------------------------------------
+        // SEND CURRENT TIME TO PATCHWORLD
+        //
+        // Output:
+        // Web Bridge -> Jolt Out A
+        // ---------------------------------------------------------
+
         async function sendClockSync() {
+
             const value = secondsSinceMidnight();
 
             try {
+
                 await PatchWorld.interfaceSendJoltA(value);
 
                 document.getElementById("status").textContent =
-                    "Sync request received.";
+                    "Clock synchronized.";
 
                 document.getElementById("lastsync").textContent =
-                    "Sent: " + value.toFixed(3) + " seconds since midnight";
+                    "Sent: " +
+                    value.toFixed(3) +
+                    " seconds since midnight";
 
-                console.log("Clock sync sent to Patchworld:", value);
+                console.log(
+                    "Clock sync sent to Patchworld:",
+                    value
+                );
 
-            } catch (error) {
+            }
+
+            catch (error) {
 
                 document.getElementById("status").textContent =
                     "Patchworld bridge not available.";
 
-                console.log("Patchworld bridge not available:", error);
+                console.log(
+                    "Patchworld bridge not available:",
+                    error
+                );
             }
         }
 
 
-        // Patchworld Jolt In A is the clock-sync request.
+        // ---------------------------------------------------------
+        // PATCHWORLD REQUESTS A CLOCK SYNC
+        //
+        // A Jolt arriving at Web Bridge Jolt In A
+        // causes an immediate fresh time reading.
+        // ---------------------------------------------------------
+
         PatchWorld.onInterfaceInputJoltA = function(value) {
-            console.log("Sync request received from Patchworld:", value);
+
+            console.log(
+                "Sync request received from Patchworld:",
+                value
+            );
+
             sendClockSync();
         };
 
 
-        // Keep the webpage's visible clock running for debugging.
-        // This does NOT communicate with Patchworld.
+        // ---------------------------------------------------------
+        // INITIAL CONNECTION
+        //
+        // When the Web Bridge establishes communication with
+        // this page, immediately send one clock synchronization.
+        // ---------------------------------------------------------
+
+        PatchWorld.onData = function(context) {
+
+            console.log(
+                "Patchworld bridge connected."
+            );
+
+            document.getElementById("status").textContent =
+                "Patchworld connected.";
+
+            sendClockSync();
+        };
+
+
+        // ---------------------------------------------------------
+        // START VISIBLE WEBPAGE CLOCK
+        // ---------------------------------------------------------
+
         updatePageDisplay();
-        setInterval(updatePageDisplay, 1000);
+
+        setInterval(
+            updatePageDisplay,
+            1000
+        );
 
     </script>
 
