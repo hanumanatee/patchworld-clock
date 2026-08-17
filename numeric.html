@@ -71,11 +71,11 @@
         updatePageDisplay();
         syncPatchworldClock();
 
-        setInterval(updatePageDisplay, 1000);
+        setInterval(updatePageDisplay, 10000);
 
         // Temporary test interval:
         // send a fresh synchronization value every 10 seconds.
-        setInterval(syncPatchworldClock, 10000);
+        setInterval(syncPatchworldClock, 60000);
     </script>
 
 </body>
