@@ -17,9 +17,14 @@
             font-size: 48px;
         }
 
-        #seconds {
-            font-size: 28px;
+        #status {
+            font-size: 24px;
             margin-top: 20px;
+        }
+
+        #lastsync {
+            font-size: 20px;
+            margin-top: 12px;
         }
     </style>
 </head>
@@ -29,19 +34,27 @@
     <h2>Patchworld Numeric Clock</h2>
 
     <div id="clock">--:--:--</div>
-    <div id="seconds">Seconds since midnight: -----</div>
+    <div id="status">Waiting for sync request from Patchworld...</div>
+    <div id="lastsync">No sync sent yet.</div>
 
     <script>
+
+        // Return local time as seconds since midnight.
+        // Milliseconds are included for a more accurate synchronization.
         function secondsSinceMidnight() {
             const now = new Date();
 
             return (
                 now.getHours() * 3600 +
                 now.getMinutes() * 60 +
-                now.getSeconds()
+                now.getSeconds() +
+                now.getMilliseconds() / 1000
             );
         }
 
+
+        // This display is only for checking the webpage.
+        // It does NOT send anything to Patchworld.
         function updatePageDisplay() {
             const now = new Date();
 
@@ -53,29 +66,46 @@
             });
 
             document.getElementById("clock").textContent = time;
-            document.getElementById("seconds").textContent =
-                "Seconds since midnight: " + secondsSinceMidnight();
         }
 
-        async function syncPatchworldClock() {
+
+        // Read the current local time and send it to Patchworld.
+        async function sendClockSync() {
             const value = secondsSinceMidnight();
 
             try {
                 await PatchWorld.interfaceSendJoltA(value);
-                console.log("Sent to Patchworld:", value);
+
+                document.getElementById("status").textContent =
+                    "Sync request received.";
+
+                document.getElementById("lastsync").textContent =
+                    "Sent: " + value.toFixed(3) + " seconds since midnight";
+
+                console.log("Clock sync sent to Patchworld:", value);
+
             } catch (error) {
+
+                document.getElementById("status").textContent =
+                    "Patchworld bridge not available.";
+
                 console.log("Patchworld bridge not available:", error);
             }
         }
 
+
+        // Patchworld Jolt In A is the clock-sync request.
+        PatchWorld.onInterfaceInputJoltA = function(value) {
+            console.log("Sync request received from Patchworld:", value);
+            sendClockSync();
+        };
+
+
+        // Keep the webpage's visible clock running for debugging.
+        // This does NOT communicate with Patchworld.
         updatePageDisplay();
-        syncPatchworldClock();
+        setInterval(updatePageDisplay, 1000);
 
-        setInterval(updatePageDisplay, 10000);
-
-        // Temporary test interval:
-        // send a fresh synchronization value every 10 seconds.
-        setInterval(syncPatchworldClock, 60000);
     </script>
 
 </body>
