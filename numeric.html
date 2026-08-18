@@ -17,6 +17,12 @@
             font-size: 48px;
         }
 
+        #revision {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
         .status {
             font-size: 20px;
             margin-top: 12px;
@@ -25,6 +31,8 @@
 </head>
 
 <body>
+
+    <div id="revision">REV 3</div>
 
     <h2>Patchworld Numeric Clock</h2>
 
@@ -50,15 +58,9 @@
         Last successful sync: none
     </div>
 
-
     <script>
 
-        // ---------------------------------------------------------
-        // CURRENT LOCAL TIME AS SECONDS SINCE MIDNIGHT
-        // ---------------------------------------------------------
-
         function secondsSinceMidnight() {
-
             const now = new Date();
 
             return (
@@ -70,12 +72,7 @@
         }
 
 
-        // ---------------------------------------------------------
-        // VISIBLE WEBPAGE CLOCK
-        // ---------------------------------------------------------
-
         function updatePageDisplay() {
-
             const now = new Date();
 
             const time = now.toLocaleTimeString("en-GB", {
@@ -89,26 +86,16 @@
         }
 
 
-        // ---------------------------------------------------------
-        // SEND CURRENT TIME TO PATCHWORLD
-        // ---------------------------------------------------------
-
         async function sendClockSync(source) {
-
             const value = secondsSinceMidnight();
 
             document.getElementById("sendattempt").textContent =
-                "Send attempt from " + source +
-                ": " + value.toFixed(3);
-
-            console.log(
-                "Attempting clock sync from",
-                source,
-                value
-            );
+                "Send attempt from " +
+                source +
+                ": " +
+                value.toFixed(3);
 
             try {
-
                 await PatchWorld.interfaceSendJoltA(value);
 
                 document.getElementById("lastsync").textContent =
@@ -119,68 +106,33 @@
                 document.getElementById("sendattempt").textContent =
                     "Send succeeded from " + source;
 
-                console.log(
-                    "Clock sync succeeded:",
-                    value,
-                    source
-                );
-
-            }
-
-            catch (error) {
+            } catch (error) {
 
                 document.getElementById("sendattempt").textContent =
                     "SEND FAILED from " +
                     source +
                     ": " +
                     String(error);
-
-                console.log(
-                    "Clock sync FAILED:",
-                    error
-                );
             }
         }
 
 
-        // ---------------------------------------------------------
-        // PATCHWORLD MANUAL / PERIODIC SYNC REQUEST
-        // ---------------------------------------------------------
-
         PatchWorld.onInterfaceInputJoltA = function(value) {
-
-            console.log(
-                "Jolt In A received:",
-                value
-            );
-
             sendClockSync("Jolt In A");
         };
 
 
-        // ---------------------------------------------------------
-        // INITIAL BRIDGE CONNECTION
-        // ---------------------------------------------------------
-
         PatchWorld.onData = function(context) {
-
             document.getElementById("bridge").textContent =
                 "Bridge: connected";
-
-            console.log(
-                "Patchworld bridge connected."
-            );
 
             sendClockSync("initial bridge connection");
         };
 
 
-        // ---------------------------------------------------------
-        // VISIBILITY / WAKE TEST
-        // ---------------------------------------------------------
-
         document.getElementById("visibility").textContent =
             "Visibility: " + document.visibilityState;
+
 
         document.addEventListener(
             "visibilitychange",
@@ -192,30 +144,20 @@
                     "Visibility changed: " + state;
 
                 document.getElementById("wake").textContent =
-                    "Wake event received: " +
+                    "Visibility event received: " +
                     state +
                     " at " +
                     new Date().toLocaleTimeString();
 
-                console.log(
-                    "Visibility event:",
-                    state
-                );
-
                 if (state === "visible") {
-
                     document.getElementById("wake").textContent =
-                        "VISIBLE event received - calling sendClockSync()";
+                        "VISIBLE event received - calling sync";
 
                     sendClockSync("visibilitychange");
                 }
             }
         );
 
-
-        // ---------------------------------------------------------
-        // START PAGE DISPLAY
-        // ---------------------------------------------------------
 
         updatePageDisplay();
 
