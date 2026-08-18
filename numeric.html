@@ -10,24 +10,14 @@
         body {
             font-family: sans-serif;
             text-align: center;
-            margin-top: 50px;
+            margin-top: 40px;
         }
 
         #clock {
             font-size: 48px;
         }
 
-        #status {
-            font-size: 24px;
-            margin-top: 20px;
-        }
-
-        #lastsync {
-            font-size: 20px;
-            margin-top: 12px;
-        }
-
-        #visibility {
+        .status {
             font-size: 20px;
             margin-top: 12px;
         }
@@ -40,22 +30,31 @@
 
     <div id="clock">--:--:--</div>
 
-    <div id="status">
-        Waiting for Patchworld...
+    <div id="bridge" class="status">
+        Bridge: waiting
     </div>
 
-    <div id="lastsync">
-        No sync sent yet.
-    </div>
-
-    <div id="visibility">
+    <div id="visibility" class="status">
         Visibility: unknown
     </div>
+
+    <div id="wake" class="status">
+        Wake event: none
+    </div>
+
+    <div id="sendattempt" class="status">
+        Send attempt: none
+    </div>
+
+    <div id="lastsync" class="status">
+        Last successful sync: none
+    </div>
+
 
     <script>
 
         // ---------------------------------------------------------
-        // GET CURRENT LOCAL TIME AS SECONDS SINCE MIDNIGHT
+        // CURRENT LOCAL TIME AS SECONDS SINCE MIDNIGHT
         // ---------------------------------------------------------
 
         function secondsSinceMidnight() {
@@ -72,10 +71,7 @@
 
 
         // ---------------------------------------------------------
-        // UPDATE VISIBLE CLOCK ON WEBPAGE
-        //
-        // This is only for debugging/confirmation.
-        // It sends nothing to Patchworld.
+        // VISIBLE WEBPAGE CLOCK
         // ---------------------------------------------------------
 
         function updatePageDisplay() {
@@ -95,41 +91,52 @@
 
         // ---------------------------------------------------------
         // SEND CURRENT TIME TO PATCHWORLD
-        //
-        // Output:
-        // Web Bridge -> Jolt Out A
         // ---------------------------------------------------------
 
-        async function sendClockSync() {
+        async function sendClockSync(source) {
 
             const value = secondsSinceMidnight();
+
+            document.getElementById("sendattempt").textContent =
+                "Send attempt from " + source +
+                ": " + value.toFixed(3);
+
+            console.log(
+                "Attempting clock sync from",
+                source,
+                value
+            );
 
             try {
 
                 await PatchWorld.interfaceSendJoltA(value);
 
-                document.getElementById("status").textContent =
-                    "Clock synchronized.";
-
                 document.getElementById("lastsync").textContent =
-                    "Sent: " +
+                    "Last successful sync: " +
                     value.toFixed(3) +
-                    " seconds since midnight";
+                    " (" + source + ")";
+
+                document.getElementById("sendattempt").textContent =
+                    "Send succeeded from " + source;
 
                 console.log(
-                    "Clock sync sent to Patchworld:",
-                    value
+                    "Clock sync succeeded:",
+                    value,
+                    source
                 );
 
             }
 
             catch (error) {
 
-                document.getElementById("status").textContent =
-                    "Patchworld bridge not available.";
+                document.getElementById("sendattempt").textContent =
+                    "SEND FAILED from " +
+                    source +
+                    ": " +
+                    String(error);
 
                 console.log(
-                    "Patchworld bridge not available:",
+                    "Clock sync FAILED:",
                     error
                 );
             }
@@ -137,50 +144,39 @@
 
 
         // ---------------------------------------------------------
-        // PATCHWORLD REQUESTS A CLOCK SYNC
-        //
-        // Jolt arriving at Web Bridge Jolt In A
-        // causes an immediate fresh time reading.
+        // PATCHWORLD MANUAL / PERIODIC SYNC REQUEST
         // ---------------------------------------------------------
 
         PatchWorld.onInterfaceInputJoltA = function(value) {
 
             console.log(
-                "Sync request received from Patchworld:",
+                "Jolt In A received:",
                 value
             );
 
-            sendClockSync();
+            sendClockSync("Jolt In A");
         };
 
 
         // ---------------------------------------------------------
-        // INITIAL WEB BRIDGE CONNECTION
-        //
-        // Immediately synchronize when the bridge connects.
+        // INITIAL BRIDGE CONNECTION
         // ---------------------------------------------------------
 
         PatchWorld.onData = function(context) {
+
+            document.getElementById("bridge").textContent =
+                "Bridge: connected";
 
             console.log(
                 "Patchworld bridge connected."
             );
 
-            document.getElementById("status").textContent =
-                "Patchworld connected.";
-
-            sendClockSync();
+            sendClockSync("initial bridge connection");
         };
 
 
         // ---------------------------------------------------------
-        // QUEST / PATCHWORLD WAKE DETECTION
-        //
-        // Patchworld's embedded browser generates visibilitychange
-        // when the Quest is removed and later put back on.
-        //
-        // When the page becomes visible again, immediately send
-        // a fresh clock synchronization.
+        // VISIBILITY / WAKE TEST
         // ---------------------------------------------------------
 
         document.getElementById("visibility").textContent =
@@ -195,27 +191,30 @@
                 document.getElementById("visibility").textContent =
                     "Visibility changed: " + state;
 
+                document.getElementById("wake").textContent =
+                    "Wake event received: " +
+                    state +
+                    " at " +
+                    new Date().toLocaleTimeString();
+
                 console.log(
-                    "Visibility changed:",
+                    "Visibility event:",
                     state
                 );
 
                 if (state === "visible") {
 
-                    document.getElementById("status").textContent =
-                        "Woke up - synchronizing clock...";
+                    document.getElementById("wake").textContent =
+                        "VISIBLE event received - calling sendClockSync()";
 
-                    sendClockSync();
+                    sendClockSync("visibilitychange");
                 }
             }
         );
 
 
         // ---------------------------------------------------------
-        // START VISIBLE WEBPAGE CLOCK
-        //
-        // This updates only the webpage display.
-        // It does not send time to Patchworld.
+        // START PAGE DISPLAY
         // ---------------------------------------------------------
 
         updatePageDisplay();
