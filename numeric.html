@@ -13,54 +13,53 @@
             margin-top: 40px;
         }
 
-        #clock {
-            font-size: 48px;
-        }
-
         #revision {
             font-size: 22px;
             font-weight: bold;
             margin-bottom: 18px;
         }
 
-        .status {
+        #clock {
+            font-size: 48px;
+        }
+
+        #status {
             font-size: 20px;
-            margin-top: 12px;
+            margin-top: 16px;
+        }
+
+        #lastsync {
+            font-size: 18px;
+            margin-top: 10px;
         }
     </style>
 </head>
 
 <body>
 
-    <div id="revision">REV 3</div>
+    <div id="revision">REV 4</div>
 
     <h2>Patchworld Numeric Clock</h2>
 
     <div id="clock">--:--:--</div>
 
-    <div id="bridge" class="status">
-        Bridge: waiting
+    <div id="status">
+        Waiting for Patchworld...
     </div>
 
-    <div id="visibility" class="status">
-        Visibility: unknown
+    <div id="lastsync">
+        No sync sent yet.
     </div>
 
-    <div id="wake" class="status">
-        Wake event: none
-    </div>
-
-    <div id="sendattempt" class="status">
-        Send attempt: none
-    </div>
-
-    <div id="lastsync" class="status">
-        Last successful sync: none
-    </div>
 
     <script>
 
+        // ---------------------------------------------------------
+        // CURRENT LOCAL TIME AS SECONDS SINCE MIDNIGHT
+        // ---------------------------------------------------------
+
         function secondsSinceMidnight() {
+
             const now = new Date();
 
             return (
@@ -72,7 +71,12 @@
         }
 
 
+        // ---------------------------------------------------------
+        // VISIBLE WEBPAGE CLOCK
+        // ---------------------------------------------------------
+
         function updatePageDisplay() {
+
             const now = new Date();
 
             const time = now.toLocaleTimeString("en-GB", {
@@ -86,78 +90,82 @@
         }
 
 
+        // ---------------------------------------------------------
+        // SEND CURRENT TIME TO PATCHWORLD
+        // ---------------------------------------------------------
+
         async function sendClockSync(source) {
+
             const value = secondsSinceMidnight();
 
-            document.getElementById("sendattempt").textContent =
-                "Send attempt from " +
-                source +
-                ": " +
-                value.toFixed(3);
-
             try {
+
                 await PatchWorld.interfaceSendJoltA(value);
 
+                document.getElementById("status").textContent =
+                    "Clock synchronized";
+
                 document.getElementById("lastsync").textContent =
-                    "Last successful sync: " +
+                    "Last sync: " +
                     value.toFixed(3) +
+                    " seconds since midnight" +
                     " (" + source + ")";
 
-                document.getElementById("sendattempt").textContent =
-                    "Send succeeded from " + source;
+            }
 
-            } catch (error) {
+            catch (error) {
 
-                document.getElementById("sendattempt").textContent =
-                    "SEND FAILED from " +
-                    source +
-                    ": " +
-                    String(error);
+                document.getElementById("status").textContent =
+                    "Patchworld bridge not available";
             }
         }
 
 
+        // ---------------------------------------------------------
+        // PATCHWORLD REQUESTS A SYNC
+        // ---------------------------------------------------------
+
         PatchWorld.onInterfaceInputJoltA = function(value) {
+
             sendClockSync("Jolt In A");
         };
 
 
-        PatchWorld.onData = function(context) {
-            document.getElementById("bridge").textContent =
-                "Bridge: connected";
+        // ---------------------------------------------------------
+        // INITIAL BRIDGE CONNECTION
+        // ---------------------------------------------------------
 
-            sendClockSync("initial bridge connection");
+        PatchWorld.onData = function(context) {
+
+            document.getElementById("status").textContent =
+                "Patchworld connected";
+
+            sendClockSync("initial connection");
         };
 
 
-        document.getElementById("visibility").textContent =
-            "Visibility: " + document.visibilityState;
-
+        // ---------------------------------------------------------
+        // QUEST / PATCHWORLD WAKE DETECTION
+        // ---------------------------------------------------------
 
         document.addEventListener(
             "visibilitychange",
             function() {
 
-                const state = document.visibilityState;
+                if (document.visibilityState === "visible") {
 
-                document.getElementById("visibility").textContent =
-                    "Visibility changed: " + state;
+                    document.getElementById("status").textContent =
+                        "Resuming - synchronizing";
 
-                document.getElementById("wake").textContent =
-                    "Visibility event received: " +
-                    state +
-                    " at " +
-                    new Date().toLocaleTimeString();
-
-                if (state === "visible") {
-                    document.getElementById("wake").textContent =
-                        "VISIBLE event received - calling sync";
-
-                    sendClockSync("visibilitychange");
+                    sendClockSync("wake");
                 }
             }
         );
 
+
+        // ---------------------------------------------------------
+        // START VISIBLE WEBPAGE CLOCK
+        // ---------------------------------------------------------
 
         updatePageDisplay();
 
