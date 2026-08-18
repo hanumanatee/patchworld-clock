@@ -26,6 +26,11 @@
             font-size: 20px;
             margin-top: 12px;
         }
+
+        #visibility {
+            font-size: 20px;
+            margin-top: 12px;
+        }
     </style>
 </head>
 
@@ -41,6 +46,10 @@
 
     <div id="lastsync">
         No sync sent yet.
+    </div>
+
+    <div id="visibility">
+        Visibility: unknown
     </div>
 
 
@@ -164,6 +173,40 @@
 
             sendClockSync();
         };
+
+
+        // ---------------------------------------------------------
+        // VISIBILITY CHANGE TEST
+        //
+        // For now this ONLY reports visibility changes.
+        // It deliberately does NOT synchronize the clock.
+        //
+        // We want to determine whether Patchworld's embedded
+        // browser generates this event when the Quest is removed
+        // and subsequently put back on.
+        // ---------------------------------------------------------
+
+        document.getElementById("visibility").textContent =
+            "Visibility: " + document.visibilityState;
+
+        document.addEventListener(
+            "visibilitychange",
+            function() {
+
+                const state = document.visibilityState;
+
+                document.getElementById("visibility").textContent =
+                    "Visibility changed: " + state;
+
+                document.getElementById("status").textContent =
+                    "Visibility event received: " + state;
+
+                console.log(
+                    "Visibility changed:",
+                    state
+                );
+            }
+        );
 
 
         // ---------------------------------------------------------
