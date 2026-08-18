@@ -52,7 +52,6 @@
         Visibility: unknown
     </div>
 
-
     <script>
 
         // ---------------------------------------------------------
@@ -73,7 +72,7 @@
 
 
         // ---------------------------------------------------------
-        // UPDATE THE VISIBLE CLOCK ON THE WEBPAGE
+        // UPDATE VISIBLE CLOCK ON WEBPAGE
         //
         // This is only for debugging/confirmation.
         // It sends nothing to Patchworld.
@@ -140,7 +139,7 @@
         // ---------------------------------------------------------
         // PATCHWORLD REQUESTS A CLOCK SYNC
         //
-        // A Jolt arriving at Web Bridge Jolt In A
+        // Jolt arriving at Web Bridge Jolt In A
         // causes an immediate fresh time reading.
         // ---------------------------------------------------------
 
@@ -156,10 +155,9 @@
 
 
         // ---------------------------------------------------------
-        // INITIAL CONNECTION
+        // INITIAL WEB BRIDGE CONNECTION
         //
-        // When the Web Bridge establishes communication with
-        // this page, immediately send one clock synchronization.
+        // Immediately synchronize when the bridge connects.
         // ---------------------------------------------------------
 
         PatchWorld.onData = function(context) {
@@ -176,14 +174,13 @@
 
 
         // ---------------------------------------------------------
-        // VISIBILITY CHANGE TEST
+        // QUEST / PATCHWORLD WAKE DETECTION
         //
-        // For now this ONLY reports visibility changes.
-        // It deliberately does NOT synchronize the clock.
+        // Patchworld's embedded browser generates visibilitychange
+        // when the Quest is removed and later put back on.
         //
-        // We want to determine whether Patchworld's embedded
-        // browser generates this event when the Quest is removed
-        // and subsequently put back on.
+        // When the page becomes visible again, immediately send
+        // a fresh clock synchronization.
         // ---------------------------------------------------------
 
         document.getElementById("visibility").textContent =
@@ -198,19 +195,27 @@
                 document.getElementById("visibility").textContent =
                     "Visibility changed: " + state;
 
-                document.getElementById("status").textContent =
-                    "Visibility event received: " + state;
-
                 console.log(
                     "Visibility changed:",
                     state
                 );
+
+                if (state === "visible") {
+
+                    document.getElementById("status").textContent =
+                        "Woke up - synchronizing clock...";
+
+                    sendClockSync();
+                }
             }
         );
 
 
         // ---------------------------------------------------------
         // START VISIBLE WEBPAGE CLOCK
+        //
+        // This updates only the webpage display.
+        // It does not send time to Patchworld.
         // ---------------------------------------------------------
 
         updatePageDisplay();
