@@ -37,7 +37,7 @@
 
 <body>
 
-    <div id="revision">REV 4</div>
+    <div id="revision">REV 5</div>
 
     <h2>Patchworld Numeric Clock</h2>
 
@@ -55,7 +55,7 @@
     <script>
 
         // ---------------------------------------------------------
-        // CURRENT LOCAL TIME AS SECONDS SINCE MIDNIGHT
+        // CURRENT LOCAL TIME AS WHOLE SECONDS SINCE MIDNIGHT
         // ---------------------------------------------------------
 
         function secondsSinceMidnight() {
@@ -65,8 +65,7 @@
             return (
                 now.getHours() * 3600 +
                 now.getMinutes() * 60 +
-                now.getSeconds() +
-                now.getMilliseconds() / 1000
+                now.getSeconds()
             );
         }
 
@@ -107,7 +106,7 @@
 
                 document.getElementById("lastsync").textContent =
                     "Last sync: " +
-                    value.toFixed(3) +
+                    value +
                     " seconds since midnight" +
                     " (" + source + ")";
 
