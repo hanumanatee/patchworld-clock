@@ -37,7 +37,7 @@
 
 <body>
 
-    <div id="revision">REV 7</div>
+    <div id="revision">REV 8</div>
 
     <h2>Patchworld Numeric Clock</h2>
 
@@ -149,7 +149,16 @@
 
 
         // ---------------------------------------------------------
-        // CONVERT UNIX TIMESTAMP TO LOCAL YYMMDDHHMM
+        // CONVERT UNIX TIMESTAMP TO LOCAL DYYMMDDHHMM
+        //
+        // D:
+        // 0 = Sunday
+        // 1 = Monday
+        // 2 = Tuesday
+        // 3 = Wednesday
+        // 4 = Thursday
+        // 5 = Friday
+        // 6 = Saturday
         // ---------------------------------------------------------
 
         async function sendLocalTime(utcSeconds) {
@@ -166,6 +175,7 @@
 
             const date = new Date(timestamp * 1000);
 
+            const weekday = date.getDay();
             const year = date.getFullYear() % 100;
             const month = date.getMonth() + 1;
             const day = date.getDate();
@@ -173,6 +183,7 @@
             const minute = date.getMinutes();
 
             const value =
+                weekday * 10000000000 +
                 year * 100000000 +
                 month * 1000000 +
                 day * 10000 +
@@ -187,7 +198,7 @@
                 );
 
                 document.getElementById("status").textContent =
-                    "Local time sent: " + value;
+                    "Local date/time sent: " + value;
 
             }
 
