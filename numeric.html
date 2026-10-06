@@ -43,7 +43,7 @@
 
 <body>
 
-    <div id="revision">REV 9</div>
+    <div id="revision">REV 10</div>
 
     <h2>Patchworld Numeric Clock</h2>
 
@@ -159,9 +159,17 @@
 
 
         // ---------------------------------------------------------
-        // CONVERT UNIX TIMESTAMP TO LOCAL DYYMMDDHHMM
+        // CONVERT UNIX TIMESTAMP TO LOCAL DATE/TIME
         //
-        // D:
+        // Returned as two wireless values:
+        //
+        // YYMMDD
+        //
+        // and:
+        //
+        // DHHMM
+        //
+        // where D is:
         // 0 = Sunday
         // 1 = Monday
         // 2 = Tuesday
@@ -192,11 +200,18 @@
             const hour = date.getHours();
             const minute = date.getMinutes();
 
-            const value =
-                weekday * 10000000000 +
-                year * 100000000 +
-                month * 1000000 +
-                day * 10000 +
+
+            // -----------------------------------------------------
+            // BUILD THE TWO NUMERIC VALUES
+            // -----------------------------------------------------
+
+            const yymmdd =
+                year * 10000 +
+                month * 100 +
+                day;
+
+            const dhhmm =
+                weekday * 10000 +
                 hour * 100 +
                 minute;
 
@@ -230,18 +245,25 @@
                 pad2(hour) + ":" +
                 pad2(minute) +
                 "<br>" +
-                "Sent value: " + value;
+                "YYMMDD sent: " + yymmdd +
+                "<br>" +
+                "DHHMM sent: " + dhhmm;
 
 
             // -----------------------------------------------------
-            // SEND CONVERTED VALUE TO PATCHWORLD
+            // SEND THE TWO VALUES TO PATCHWORLD
             // -----------------------------------------------------
 
             try {
 
                 await PatchWorld.sendWirelessJolt(
-                    "receive local time",
-                    value
+                    "receive local yymmdd",
+                    yymmdd
+                );
+
+                await PatchWorld.sendWirelessJolt(
+                    "receive local dhhmm",
+                    dhhmm
                 );
 
                 document.getElementById("status").textContent =
