@@ -32,12 +32,18 @@
             font-size: 18px;
             margin-top: 10px;
         }
+
+        #diagnostic {
+            font-size: 18px;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
     </style>
 </head>
 
 <body>
 
-    <div id="revision">REV 8</div>
+    <div id="revision">REV 9</div>
 
     <h2>Patchworld Numeric Clock</h2>
 
@@ -49,6 +55,10 @@
 
     <div id="lastsync">
         No sync sent yet.
+    </div>
+
+    <div id="diagnostic">
+        No timestamp conversion yet.
     </div>
 
 
@@ -190,6 +200,43 @@
                 hour * 100 +
                 minute;
 
+
+            // -----------------------------------------------------
+            // DIAGNOSTIC DISPLAY
+            // -----------------------------------------------------
+
+            const pad2 = function(number) {
+                return String(number).padStart(2, "0");
+            };
+
+            const weekdayNames = [
+                "Sunday",
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday"
+            ];
+
+            document.getElementById("diagnostic").innerHTML =
+                "Received Unix: " + timestamp +
+                "<br>" +
+                "Converted local: " +
+                weekdayNames[weekday] + " " +
+                date.getFullYear() + "-" +
+                pad2(month) + "-" +
+                pad2(day) + " " +
+                pad2(hour) + ":" +
+                pad2(minute) +
+                "<br>" +
+                "Sent value: " + value;
+
+
+            // -----------------------------------------------------
+            // SEND CONVERTED VALUE TO PATCHWORLD
+            // -----------------------------------------------------
+
             try {
 
                 await PatchWorld.sendWirelessJolt(
@@ -198,7 +245,7 @@
                 );
 
                 document.getElementById("status").textContent =
-                    "Local date/time sent: " + value;
+                    "Local date/time sent";
 
             }
 
