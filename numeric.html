@@ -37,7 +37,7 @@
 
 <body>
 
-    <div id="revision">REV 5</div>
+    <div id="revision">REV 6</div>
 
     <h2>Patchworld Numeric Clock</h2>
 
@@ -121,7 +121,35 @@
 
 
         // ---------------------------------------------------------
-        // PATCHWORLD REQUESTS A SYNC
+        // SEND CURRENT UNIX TIMESTAMP WIRELESSLY
+        // ---------------------------------------------------------
+
+        async function sendUtcNow() {
+
+            const value = Math.floor(Date.now() / 1000);
+
+            try {
+
+                await PatchWorld.sendWirelessJolt(
+                    "receive utc now",
+                    value
+                );
+
+                document.getElementById("status").textContent =
+                    "UTC timestamp sent: " + value;
+
+            }
+
+            catch (error) {
+
+                document.getElementById("status").textContent =
+                    "UTC timestamp send failed";
+            }
+        }
+
+
+        // ---------------------------------------------------------
+        // PATCHWORLD REQUESTS A CLOCK SYNC
         // ---------------------------------------------------------
 
         PatchWorld.onInterfaceInputJoltA = function(value) {
@@ -138,6 +166,13 @@
 
             document.getElementById("status").textContent =
                 "Patchworld connected";
+
+            PatchWorld.subscribeWifi(
+                "request utc now",
+                function(value) {
+                    sendUtcNow();
+                }
+            );
 
             sendClockSync("initial connection");
         };
