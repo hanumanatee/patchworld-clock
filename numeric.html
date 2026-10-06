@@ -37,7 +37,7 @@
 
 <body>
 
-    <div id="revision">REV 6</div>
+    <div id="revision">REV 7</div>
 
     <h2>Patchworld Numeric Clock</h2>
 
@@ -149,6 +149,57 @@
 
 
         // ---------------------------------------------------------
+        // CONVERT UNIX TIMESTAMP TO LOCAL YYMMDDHHMM
+        // ---------------------------------------------------------
+
+        async function sendLocalTime(utcSeconds) {
+
+            const timestamp = Number(utcSeconds);
+
+            if (!Number.isFinite(timestamp)) {
+
+                document.getElementById("status").textContent =
+                    "Invalid UTC timestamp";
+
+                return;
+            }
+
+            const date = new Date(timestamp * 1000);
+
+            const year = date.getFullYear() % 100;
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const hour = date.getHours();
+            const minute = date.getMinutes();
+
+            const value =
+                year * 100000000 +
+                month * 1000000 +
+                day * 10000 +
+                hour * 100 +
+                minute;
+
+            try {
+
+                await PatchWorld.sendWirelessJolt(
+                    "receive local time",
+                    value
+                );
+
+                document.getElementById("status").textContent =
+                    "Local time sent: " + value;
+
+            }
+
+            catch (error) {
+
+                document.getElementById("status").textContent =
+                    "Local time send failed";
+            }
+        }
+
+
+        // ---------------------------------------------------------
         // PATCHWORLD REQUESTS A CLOCK SYNC
         // ---------------------------------------------------------
 
@@ -171,6 +222,13 @@
                 "request utc now",
                 function(value) {
                     sendUtcNow();
+                }
+            );
+
+            PatchWorld.subscribeWifi(
+                "send utc time",
+                function(value) {
+                    sendLocalTime(value);
                 }
             );
 
