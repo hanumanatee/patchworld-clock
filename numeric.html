@@ -43,7 +43,7 @@
 
 <body>
 
-    <div id="revision">REV 11</div>
+    <div id="revision">REV 12</div>
 
     <h2>Patchworld Numeric Clock</h2>
 
@@ -63,6 +63,14 @@
 
 
     <script>
+
+        // ---------------------------------------------------------
+        // STORAGE FOR INCOMING UTC TIMESTAMP PARTS
+        // ---------------------------------------------------------
+
+        let pendingUtcHigh = null;
+        let pendingUtcLow = null;
+
 
         // ---------------------------------------------------------
         // CURRENT LOCAL TIME AS WHOLE SECONDS SINCE MIDNIGHT
@@ -131,22 +139,48 @@
 
 
         // ---------------------------------------------------------
-        // SEND CURRENT UNIX TIMESTAMP WIRELESSLY
+        // SEND CURRENT UNIX TIMESTAMP AS TWO WIRELESS VALUES
+        //
+        // Example:
+        //
+        // Unix = 1791304320
+        //
+        // high = 17913
+        // low  = 4320
+        //
+        // Reconstruction:
+        //
+        // high * 100000 + low
         // ---------------------------------------------------------
 
         async function sendUtcNow() {
 
-            const value = Math.floor(Date.now() / 1000);
+            const timestamp = Math.floor(Date.now() / 1000);
+
+            const high = Math.floor(timestamp / 100000);
+            const low = timestamp % 100000;
 
             try {
 
                 await PatchWorld.sendWirelessJolt(
-                    "receive utc now",
-                    value
+                    "receive utc high",
+                    high
+                );
+
+                await PatchWorld.sendWirelessJolt(
+                    "receive utc low",
+                    low
                 );
 
                 document.getElementById("status").textContent =
-                    "UTC timestamp sent: " + value;
+                    "UTC timestamp sent";
+
+                document.getElementById("diagnostic").innerHTML =
+                    "UTC timestamp: " + timestamp +
+                    "<br>" +
+                    "UTC high sent: " + high +
+                    "<br>" +
+                    "UTC low sent: " + low;
 
             }
 
@@ -211,6 +245,75 @@
 
 
         // ---------------------------------------------------------
+        // ACCEPT ONE HALF OF A STORED UTC TIMESTAMP
+        //
+        // Conversion occurs only after BOTH a fresh high and
+        // a fresh low value have been received.
+        // ---------------------------------------------------------
+
+        function receiveUtcHigh(value) {
+
+            const number = Number(value);
+
+            if (!Number.isFinite(number)) {
+                document.getElementById("status").textContent =
+                    "Invalid UTC high value";
+                return;
+            }
+
+            pendingUtcHigh = number;
+
+            tryReconstructUtc();
+        }
+
+
+        function receiveUtcLow(value) {
+
+            const number = Number(value);
+
+            if (!Number.isFinite(number)) {
+                document.getElementById("status").textContent =
+                    "Invalid UTC low value";
+                return;
+            }
+
+            pendingUtcLow = number;
+
+            tryReconstructUtc();
+        }
+
+
+        // ---------------------------------------------------------
+        // RECONSTRUCT UTC TIMESTAMP WHEN BOTH PARTS ARE AVAILABLE
+        // ---------------------------------------------------------
+
+        function tryReconstructUtc() {
+
+            if (
+                pendingUtcHigh === null ||
+                pendingUtcLow === null
+            ) {
+                return;
+            }
+
+            const high = pendingUtcHigh;
+            const low = pendingUtcLow;
+
+            // Clear the pair BEFORE conversion so these values
+            // cannot accidentally be reused for another message.
+
+            pendingUtcHigh = null;
+            pendingUtcLow = null;
+
+            const timestamp =
+                high * 100000 +
+                low;
+
+            sendLocalTime(timestamp);
+        }
+
+
+        // ---------------------------------------------------------
         // CONVERT UNIX TIMESTAMP TO LOCAL DATE/TIME
         //
         // Returned as two wireless values:
@@ -254,7 +357,7 @@
 
 
             // -----------------------------------------------------
-            // BUILD THE TWO NUMERIC VALUES
+            // BUILD THE TWO LOCAL VALUES
             // -----------------------------------------------------
 
             const yymmdd =
@@ -287,7 +390,7 @@
             ];
 
             document.getElementById("diagnostic").innerHTML =
-                "Received Unix: " + timestamp +
+                "Reconstructed Unix: " + timestamp +
                 "<br>" +
                 "Converted local: " +
                 weekdayNames[weekday] + " " +
@@ -303,7 +406,7 @@
 
 
             // -----------------------------------------------------
-            // SEND THE TWO VALUES TO PATCHWORLD
+            // SEND THE TWO LOCAL VALUES TO PATCHWORLD
             // -----------------------------------------------------
 
             try {
@@ -350,6 +453,9 @@
             document.getElementById("status").textContent =
                 "Patchworld connected";
 
+
+            // Request a fresh current UTC timestamp.
+
             PatchWorld.subscribeWifi(
                 "request utc now",
                 function(value) {
@@ -357,12 +463,26 @@
                 }
             );
 
+
+            // Receive the two stored halves of a UTC timestamp
+            // that is to be converted to viewer-local time.
+
             PatchWorld.subscribeWifi(
-                "send utc time",
+                "send utc high",
                 function(value) {
-                    sendLocalTime(value);
+                    receiveUtcHigh(value);
                 }
             );
+
+            PatchWorld.subscribeWifi(
+                "send utc low",
+                function(value) {
+                    receiveUtcLow(value);
+                }
+            );
+
+
+            // Request the viewer's current local calendar date.
 
             PatchWorld.subscribeWifi(
                 "send local date",
@@ -370,6 +490,7 @@
                     sendLocalDate();
                 }
             );
+
 
             sendClockSync("initial connection");
         };
