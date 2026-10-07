@@ -32,18 +32,12 @@
             font-size: 18px;
             margin-top: 10px;
         }
-
-        #diagnostic {
-            font-size: 18px;
-            margin-top: 20px;
-            line-height: 1.6;
-        }
     </style>
 </head>
 
 <body>
 
-    <div id="revision">REV 12</div>
+    <div id="revision">REV 13</div>
 
     <h2>Patchworld Numeric Clock</h2>
 
@@ -55,10 +49,6 @@
 
     <div id="lastsync">
         No sync sent yet.
-    </div>
-
-    <div id="diagnostic">
-        No timestamp conversion yet.
     </div>
 
 
@@ -140,17 +130,6 @@
 
         // ---------------------------------------------------------
         // SEND CURRENT UNIX TIMESTAMP AS TWO WIRELESS VALUES
-        //
-        // Example:
-        //
-        // Unix = 1791304320
-        //
-        // high = 17913
-        // low  = 4320
-        //
-        // Reconstruction:
-        //
-        // high * 100000 + low
         // ---------------------------------------------------------
 
         async function sendUtcNow() {
@@ -175,13 +154,6 @@
                 document.getElementById("status").textContent =
                     "UTC timestamp sent";
 
-                document.getElementById("diagnostic").innerHTML =
-                    "UTC timestamp: " + timestamp +
-                    "<br>" +
-                    "UTC high sent: " + high +
-                    "<br>" +
-                    "UTC low sent: " + low;
-
             }
 
             catch (error) {
@@ -195,11 +167,9 @@
         // ---------------------------------------------------------
         // SEND CURRENT LOCAL DATE WIRELESSLY
         //
-        // Returned as:
+        // Returned as DYYMMDD
         //
-        // DYYMMDD
-        //
-        // where D is:
+        // D:
         // 0 = Sunday
         // 1 = Monday
         // 2 = Tuesday
@@ -246,9 +216,6 @@
 
         // ---------------------------------------------------------
         // ACCEPT ONE HALF OF A STORED UTC TIMESTAMP
-        //
-        // Conversion occurs only after BOTH a fresh high and
-        // a fresh low value have been received.
         // ---------------------------------------------------------
 
         function receiveUtcHigh(value) {
@@ -256,8 +223,10 @@
             const number = Number(value);
 
             if (!Number.isFinite(number)) {
+
                 document.getElementById("status").textContent =
                     "Invalid UTC high value";
+
                 return;
             }
 
@@ -272,8 +241,10 @@
             const number = Number(value);
 
             if (!Number.isFinite(number)) {
+
                 document.getElementById("status").textContent =
                     "Invalid UTC low value";
+
                 return;
             }
 
@@ -299,9 +270,6 @@
             const high = pendingUtcHigh;
             const low = pendingUtcLow;
 
-            // Clear the pair BEFORE conversion so these values
-            // cannot accidentally be reused for another message.
-
             pendingUtcHigh = null;
             pendingUtcLow = null;
 
@@ -316,22 +284,10 @@
         // ---------------------------------------------------------
         // CONVERT UNIX TIMESTAMP TO LOCAL DATE/TIME
         //
-        // Returned as two wireless values:
+        // Returned as:
         //
         // YYMMDD
-        //
-        // and:
-        //
         // DHHMM
-        //
-        // where D is:
-        // 0 = Sunday
-        // 1 = Monday
-        // 2 = Tuesday
-        // 3 = Wednesday
-        // 4 = Thursday
-        // 5 = Friday
-        // 6 = Saturday
         // ---------------------------------------------------------
 
         async function sendLocalTime(utcSeconds) {
@@ -355,11 +311,6 @@
             const hour = date.getHours();
             const minute = date.getMinutes();
 
-
-            // -----------------------------------------------------
-            // BUILD THE TWO LOCAL VALUES
-            // -----------------------------------------------------
-
             const yymmdd =
                 year * 10000 +
                 month * 100 +
@@ -369,45 +320,6 @@
                 weekday * 10000 +
                 hour * 100 +
                 minute;
-
-
-            // -----------------------------------------------------
-            // DIAGNOSTIC DISPLAY
-            // -----------------------------------------------------
-
-            const pad2 = function(number) {
-                return String(number).padStart(2, "0");
-            };
-
-            const weekdayNames = [
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday"
-            ];
-
-            document.getElementById("diagnostic").innerHTML =
-                "Reconstructed Unix: " + timestamp +
-                "<br>" +
-                "Converted local: " +
-                weekdayNames[weekday] + " " +
-                date.getFullYear() + "-" +
-                pad2(month) + "-" +
-                pad2(day) + " " +
-                pad2(hour) + ":" +
-                pad2(minute) +
-                "<br>" +
-                "YYMMDD sent: " + yymmdd +
-                "<br>" +
-                "DHHMM sent: " + dhhmm;
-
-
-            // -----------------------------------------------------
-            // SEND THE TWO LOCAL VALUES TO PATCHWORLD
-            // -----------------------------------------------------
 
             try {
 
@@ -454,8 +366,6 @@
                 "Patchworld connected";
 
 
-            // Request a fresh current UTC timestamp.
-
             PatchWorld.subscribeWifi(
                 "request utc now",
                 function(value) {
@@ -464,15 +374,13 @@
             );
 
 
-            // Receive the two stored halves of a UTC timestamp
-            // that is to be converted to viewer-local time.
-
             PatchWorld.subscribeWifi(
                 "send utc high",
                 function(value) {
                     receiveUtcHigh(value);
                 }
             );
+
 
             PatchWorld.subscribeWifi(
                 "send utc low",
@@ -481,8 +389,6 @@
                 }
             );
 
-
-            // Request the viewer's current local calendar date.
 
             PatchWorld.subscribeWifi(
                 "send local date",
