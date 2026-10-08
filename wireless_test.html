@@ -11,7 +11,7 @@
         body {
             font-family: sans-serif;
             text-align: center;
-            margin-top: 40px;
+            margin: 30px 15px;
         }
 
         #revision {
@@ -20,45 +20,83 @@
         }
 
         #status {
-            font-size: 20px;
-            margin-top: 20px;
+            font-size: 18px;
+            margin: 18px 0;
         }
 
         #received, #sent {
-            font-size: 24px;
-            margin-top: 20px;
+            font-size: 22px;
+            margin: 15px 0;
+        }
+
+        input {
+            font-size: 20px;
+            width: 100px;
+            text-align: center;
+        }
+
+        button {
+            font-size: 18px;
+            margin: 10px;
+            padding: 8px 16px;
         }
     </style>
 </head>
 
 <body>
 
-    <div id="revision">WIRELESS TEST REV 1</div>
+    <div id="revision">WIRELESS TEST REV 2</div>
 
-    <h2>Patchworld Wireless Echo Test</h2>
+    <h2>Channel ID Test</h2>
 
     <div id="status">Waiting for Patchworld...</div>
 
-    <div id="received">Received: --</div>
+    <div>
+        Outgoing Channel ID:
+        <input id="channelID"
+               type="number"
+               min="0"
+               step="1"
+               value="1">
+    </div>
 
+    <div id="received">Received: --</div>
     <div id="sent">Echoed: --</div>
 
+    <button onclick="clearDisplay()">Clear Display</button>
+
     <script>
+
+        function clearDisplay() {
+
+            document.getElementById("received").textContent =
+                "Received: --";
+
+            document.getElementById("sent").textContent =
+                "Echoed: --";
+        }
+
 
         async function echoTestValue(value) {
 
             document.getElementById("received").textContent =
                 "Received: " + value;
 
+            const channelID = Number(
+                document.getElementById("channelID").value
+            );
+
             try {
 
                 await PatchWorld.sendWirelessJolt(
                     "receive test value",
-                    value
+                    value,
+                    channelID
                 );
 
                 document.getElementById("sent").textContent =
-                    "Echoed: " + value;
+                    "Echoed: " + value +
+                    " on Channel ID " + channelID;
 
             }
 
