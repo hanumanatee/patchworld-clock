@@ -29,10 +29,10 @@
             margin: 15px 0;
         }
 
-        input {
-            font-size: 20px;
-            width: 100px;
-            text-align: center;
+        select {
+            font-size: 22px;
+            padding: 8px 14px;
+            margin: 10px;
         }
 
         button {
@@ -45,7 +45,7 @@
 
 <body>
 
-    <div id="revision">WIRELESS TEST REV 2</div>
+    <div id="revision">WIRELESS TEST REV 3</div>
 
     <h2>Channel ID Test</h2>
 
@@ -53,11 +53,19 @@
 
     <div>
         Outgoing Channel ID:
-        <input id="channelID"
-               type="number"
-               min="0"
-               step="1"
-               value="1">
+        <select id="channelID">
+            <option value="0">0</option>
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+        </select>
     </div>
 
     <div id="received">Received: --</div>
