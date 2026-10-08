@@ -37,7 +37,7 @@
 
 <body>
 
-    <div id="revision">REV 13</div>
+    <div id="revision">REV 14</div>
 
     <h2>Patchworld Numeric Clock</h2>
 
@@ -50,7 +50,6 @@
     <div id="lastsync">
         No sync sent yet.
     </div>
-
 
     <script>
 
@@ -98,7 +97,7 @@
 
 
         // ---------------------------------------------------------
-        // SEND CURRENT TIME TO PATCHWORLD
+        // SEND CURRENT TIME TO PATCHWORLD VIA JOLT A
         // ---------------------------------------------------------
 
         async function sendClockSync(source) {
@@ -165,9 +164,9 @@
 
 
         // ---------------------------------------------------------
-        // SEND CURRENT LOCAL DATE WIRELESSLY
+        // SEND CURRENT LOCAL DATE VIA WEB BRIDGE JOLT B
         //
-        // Returned as DYYMMDD
+        // Value format: DYYMMDD
         //
         // D:
         // 0 = Sunday
@@ -196,10 +195,7 @@
 
             try {
 
-                await PatchWorld.sendWirelessJolt(
-                    "receive local date",
-                    value
-                );
+                await PatchWorld.interfaceSendJoltB(value);
 
                 document.getElementById("status").textContent =
                     "Local date sent: " + value;
@@ -284,7 +280,7 @@
         // ---------------------------------------------------------
         // CONVERT UNIX TIMESTAMP TO LOCAL DATE/TIME
         //
-        // Returned as:
+        // Returned wirelessly as:
         //
         // YYMMDD
         // DHHMM
@@ -389,6 +385,9 @@
                 }
             );
 
+
+            // The request remains wireless, but the response
+            // now goes directly to this bridge's Jolt B output.
 
             PatchWorld.subscribeWifi(
                 "send local date",
