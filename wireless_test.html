@@ -24,15 +24,22 @@
             margin: 18px 0;
         }
 
+        #suffix {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 18px 0;
+        }
+
+        #channels {
+            font-size: 17px;
+            margin: 18px 0;
+            line-height: 1.8;
+            overflow-wrap: anywhere;
+        }
+
         #received, #sent {
             font-size: 22px;
             margin: 15px 0;
-        }
-
-        select {
-            font-size: 22px;
-            padding: 8px 14px;
-            margin: 10px;
         }
 
         button {
@@ -45,27 +52,17 @@
 
 <body>
 
-    <div id="revision">WIRELESS TEST REV 3</div>
+    <div id="revision">WIRELESS TEST REV 4</div>
 
-    <h2>Channel ID Test</h2>
+    <h2>Dynamic Wireless Channel Test</h2>
 
     <div id="status">Waiting for Patchworld...</div>
 
-    <div>
-        Outgoing Channel ID:
-        <select id="channelID">
-            <option value="0">0</option>
-            <option value="1" selected>1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-            <option value="7">7</option>
-            <option value="8">8</option>
-            <option value="9">9</option>
-            <option value="10">10</option>
-        </select>
+    <div id="suffix">Device suffix: --</div>
+
+    <div id="channels">
+        Incoming: --<br>
+        Outgoing: --
     </div>
 
     <div id="received">Received: --</div>
@@ -74,6 +71,16 @@
     <button onclick="clearDisplay()">Clear Display</button>
 
     <script>
+
+        let deviceSuffix = null;
+        let incomingChannel = null;
+        let outgoingChannel = null;
+        let initialized = false;
+
+
+        // ---------------------------------------------------------
+        // CLEAR TEST RESULTS
+        // ---------------------------------------------------------
 
         function clearDisplay() {
 
@@ -85,26 +92,115 @@
         }
 
 
+        // ---------------------------------------------------------
+        // RECEIVE DEVICE SUFFIX VIA WEB BRIDGE JOLT A
+        // ---------------------------------------------------------
+
+        PatchWorld.onInterfaceInputJoltA = function(value) {
+
+            const suffix = Number(value);
+
+            if (
+                !Number.isInteger(suffix) ||
+                suffix <= 10000 ||
+                suffix >= 100000
+            ) {
+
+                document.getElementById("status").textContent =
+                    "Invalid suffix: " + value;
+
+                return;
+            }
+
+            if (initialized) {
+
+                if (suffix === deviceSuffix) {
+                    document.getElementById("status").textContent =
+                        "Already initialized";
+                } else {
+                    document.getElementById("status").textContent =
+                        "Different suffix received; reload page";
+                }
+
+                return;
+            }
+
+            initializeDevice(suffix);
+        };
+
+
+        // ---------------------------------------------------------
+        // CONSTRUCT NAMES AND SUBSCRIBE
+        // ---------------------------------------------------------
+
+        async function initializeDevice(suffix) {
+
+            if (initialized) {
+                return;
+            }
+
+            initialized = true;
+            deviceSuffix = suffix;
+
+            incomingChannel =
+                "send_test_value_" + deviceSuffix;
+
+            outgoingChannel =
+                "receive_test_value_" + deviceSuffix;
+
+            document.getElementById("suffix").textContent =
+                "Device suffix: " + deviceSuffix;
+
+            document.getElementById("channels").innerHTML =
+                "Incoming: " + incomingChannel + "<br>" +
+                "Outgoing: " + outgoingChannel;
+
+            document.getElementById("status").textContent =
+                "Subscribing...";
+
+            try {
+
+                await PatchWorld.subscribeWifi(
+                    incomingChannel,
+                    function(value) {
+                        echoTestValue(value);
+                    }
+                );
+
+                document.getElementById("status").textContent =
+                    "Subscribed and ready";
+
+            }
+
+            catch (error) {
+
+                initialized = false;
+
+                document.getElementById("status").textContent =
+                    "Subscription failed: " + error.message;
+            }
+        }
+
+
+        // ---------------------------------------------------------
+        // ECHO RECEIVED VALUE ON DEVICE-SPECIFIC CHANNEL
+        // ---------------------------------------------------------
+
         async function echoTestValue(value) {
 
             document.getElementById("received").textContent =
                 "Received: " + value;
 
-            const channelID = Number(
-                document.getElementById("channelID").value
-            );
-
             try {
 
                 await PatchWorld.sendWirelessJolt(
-                    "receive test value",
+                    outgoingChannel,
                     value,
-                    channelID
+                    0
                 );
 
                 document.getElementById("sent").textContent =
-                    "Echoed: " + value +
-                    " on Channel ID " + channelID;
+                    "Echoed: " + value;
 
             }
 
@@ -116,17 +212,16 @@
         }
 
 
+        // ---------------------------------------------------------
+        // PATCHWORLD BRIDGE CONNECTION
+        // ---------------------------------------------------------
+
         PatchWorld.onData = function(context) {
 
             document.getElementById("status").textContent =
-                "Patchworld connected";
-
-            PatchWorld.subscribeWifi(
-                "send test value",
-                function(value) {
-                    echoTestValue(value);
-                }
-            );
+                initialized
+                    ? "Device initialized"
+                    : "Bridge connected; waiting for suffix";
         };
 
     </script>
